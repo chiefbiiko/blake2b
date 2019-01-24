@@ -1,5 +1,9 @@
 import { readFileSync } from "deno";
-import { test, assert } from "https://deno.land/x/testing/mod.ts";
+import {
+  test,
+  assert,
+  equal
+} from "https://raw.githubusercontent.com/denoland/deno_std/master/testing/mod.ts";
 import {
   Blake2b,
   DIGESTBYTES_MAX,
@@ -25,7 +29,7 @@ test(function throwsOnInvalidDigestLength(): void {
 
 test(function throwsOnInvalidKeyLength(): void {
   try {
-    new Blake2b(DIGESTBYTES_MAX, new Uint8Array(new Array(KEYBYTES_MAX + 1)));
+    new Blake2b(DIGESTBYTES_MAX, new Uint8Array(KEYBYTES_MAX + 1));
     assert(false);
   } catch (err) {
     assert(err);
@@ -36,8 +40,8 @@ test(function throwsOnInvalidSaltLength(): void {
   try {
     new Blake2b(
       DIGESTBYTES_MAX,
-      new Uint8Array(new Array(KEYBYTES_MAX)),
-      new Uint8Array(new Array(SALTBYTES + 1))
+      new Uint8Array(KEYBYTES_MAX),
+      new Uint8Array(SALTBYTES + 1)
     );
     assert(false);
   } catch (err) {
@@ -49,9 +53,9 @@ test(function throwsOnInvalidPersonalLength(): void {
   try {
     new Blake2b(
       DIGESTBYTES_MAX,
-      new Uint8Array(new Array(KEYBYTES_MAX)),
-      new Uint8Array(new Array(SALTBYTES)),
-      new Uint8Array(new Array(PERSONALBYTES + 1))
+      new Uint8Array(KEYBYTES_MAX),
+      new Uint8Array(SALTBYTES),
+      new Uint8Array(PERSONALBYTES + 1)
     );
     assert(false);
   } catch (err) {
@@ -62,7 +66,7 @@ test(function throwsOnInvalidPersonalLength(): void {
 test(async function throwsOnInvalidInputLength(): Promise<void> {
   try {
     const b: Blake2b = new Blake2b(DIGESTBYTES_MAX);
-    await b.write(new Uint8Array(new Array(INPUTBYTES_MAX + 1)));
+    await b.write(new Uint8Array(INPUTBYTES_MAX + 1));
     assert(false);
   } catch (err) {
     assert(err);
@@ -76,7 +80,7 @@ test(function passesTestVectors(): void {
       const out: Uint8Array = new Uint8Array(outlen);
       await b.write(input);
       await b.read(out);
-      assert.equal(out, expected);
+      equal(out, expected);
     }
   );
 });
@@ -87,7 +91,7 @@ test(async function passesRFCExamples(): Promise<void> {
   const out: Uint8Array = new Uint8Array(digestLength);
   await b.write(toUint8Array("abc"));
   await b.read(out);
-  assert.equal(
+  equal(
     toHexString(out),
     "ba80a53f981c4d0d6a2797b69f12f6e94c212f14685ac4b74b12bb6fdbffa2d1" +
       "7d87c5392aab792dc252d5de4533cc9518d38aa8dbf1925ab92386edd4009923"
@@ -96,7 +100,7 @@ test(async function passesRFCExamples(): Promise<void> {
   out.fill(0);
   await b.write(toUint8Array(""));
   await b.read(out);
-  assert.equal(
+  equal(
     toHexString(out),
     "786a02f742015903c6c6fd852552d272912f4740e15847618a86e217f71f5419" +
       "d25e1031afee585313896444934eb04b903a685b1448b755d56f701afe9be2ce"
@@ -105,7 +109,7 @@ test(async function passesRFCExamples(): Promise<void> {
   out.fill(0);
   await b.write(toUint8Array("The quick brown fox jumps over the lazy dog"));
   await b.read(out);
-  assert.equal(
+  equal(
     toHexString(out),
     "a8add4bdddfd93e4877d2746e62817b116364a1fa7bc148d95090bc7333b3673" +
       "f82401cf7aa2e4cb1ecd90296e3f14cb5413f8ed77be73045b13914cdcd6a918"
@@ -119,7 +123,7 @@ test(async function allowsMultipleWrites(): Promise<void> {
   const buf: Uint8Array = toUint8Array("Hej, Verden");
   for (let i: number = 0; i < 10; i++) await b.write(buf);
   await b.read(out);
-  assert.equal(
+  equal(
     toHexString(out),
     "cbc20f347f5dfe37dc13231cbf7eaa4ec48e585ec055a96839b213f62bd8ce00"
   );
@@ -132,7 +136,7 @@ test(async function allowsUnsafeShortDigest(): Promise<void> {
   const buf: Uint8Array = toUint8Array("Hej, Verden");
   for (let i: number = 0; i < 10; i++) await b.write(buf);
   await b.read(out);
-  assert.equal(toHexString(out), "decacdcc3c61948c79d9f8dee5b6aa99");
+  equal(toHexString(out), "decacdcc3c61948c79d9f8dee5b6aa99");
 });
 
 test(async function allowsMacinWithKey(): Promise<void> {
@@ -146,7 +150,7 @@ test(async function allowsMacinWithKey(): Promise<void> {
   const buf: Uint8Array = toUint8Array("Hej, Verden");
   for (let i: number = 0; i < 10; i++) await b.write(buf);
   await b.read(out);
-  assert.equal(
+  equal(
     toHexString(out),
     "405f14acbeeb30396b8030f78e6a84bab0acf08cb1376aa200a500f669f675dc"
   );
@@ -163,5 +167,5 @@ test(async function allowsMacinWithKeyAndShortDigest(): Promise<void> {
   const buf: Uint8Array = toUint8Array("Hej, Verden");
   for (let i: number = 0; i < 10; i++) await b.write(buf);
   await b.read(out);
-  assert.equal(toHexString(out), "fb43f0ab6872cbfd39ec4f8a1bc6fb37");
+  equal(toHexString(out), "fb43f0ab6872cbfd39ec4f8a1bc6fb37");
 });

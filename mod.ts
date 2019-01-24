@@ -3,7 +3,7 @@
 // For a detailed specification of BLAKE2b see https://blake2.net/blake2.pdf
 
 import { Reader, ReadResult, Writer } from "deno";
-import { toHexString } from "./util.ts";
+import { assert } from "./util.ts";
 
 export const DIGESTBYTES_MIN = 1;
 export const DIGESTBYTES_MAX = 64;
@@ -65,7 +65,7 @@ const m: Uint32Array = new Uint32Array(32);
 
 // reusable parameter_block
 const parameter_block: Uint8Array = new Uint8Array([
-  0, 0, 0, 0,      //  0: outlen, keylen, fanout, depth
+  0, 0, 0, 0,      //  0: digestLength, keylen, fanout, depth
   0, 0, 0, 0,      //  4: leaf length, sequential mode
   0, 0, 0, 0,      //  8: node offset
   0, 0, 0, 0,      // 12: node offset
@@ -82,12 +82,6 @@ const parameter_block: Uint8Array = new Uint8Array([
   0, 0, 0, 0,      // 56: personal
   0, 0, 0, 0       // 60: personal
 ]);
-
-function assert(cond: boolean, msg: string = "Assertion failed"): void {
-  if (!cond) {
-    throw Error(msg);
-  }
-}
 
 // 64-bit unsigned addition
 // Sets v[a,a+1] += v[b,b+1]
@@ -232,7 +226,6 @@ function blake2bUpdate(ctx: any, input: Uint8Array): void {
 }
 
 // Completes a BLAKE2b streaming hash
-// Returns a Uint8Array containing the message digest
 function blake2bDigest(ctx: any, out: Uint8Array): void {
   ctx.t += ctx.c; // mark last block offset
 
@@ -242,7 +235,7 @@ function blake2bDigest(ctx: any, out: Uint8Array): void {
   }
   blake2bCompress(ctx, true); // final block flag = 1
 
-  for (let i: number = 0; i < ctx.outlen; i++) {
+  for (let i: number = 0; i < ctx.digestLength; i++) {
     out[i] = ctx.h[i >> 2] >> (8 * (i & 3));
   }
 }
@@ -251,27 +244,33 @@ function blake2bDigest(ctx: any, out: Uint8Array): void {
 // length. Providing a key turns the hash into a MAC. The key must be between
 // zero and 64 bytes long. The hash size can be a value between 1 and 64 but it
 // is highly recommended to use values equal or greater than:
-//   - 32 if BLAKE2b is used as a hash function (The key is zero bytes long).
-//   - 16 if BLAKE2b is used as a MAC function (The key is at least 16 bytes long).
+// - 32 if BLAKE2b is used as a hash function (key is zero bytes long).
+// - 16 if BLAKE2b is used as a MAC function (key is at least 16 bytes long).
 export class Blake2b implements Reader, Writer {
   b: Uint8Array;
   h: Uint32Array;
   t: number;
   c: number;
-  outlen: number;
+  digestLength: number;
   constructor(
-    outlen: number,
+    digestLength: number,
     key?: Uint8Array,
     salt?: Uint8Array,
     personal?: Uint8Array
   ) {
     assert(
-      outlen >= DIGESTBYTES_MIN,
-      "outlen must be at least " + DIGESTBYTES_MIN + ", was given " + outlen
+      digestLength >= DIGESTBYTES_MIN,
+      "digestLength must be at least " +
+        DIGESTBYTES_MIN +
+        ", was given " +
+        digestLength
     );
     assert(
-      outlen <= DIGESTBYTES_MAX,
-      "outlen must be at most " + DIGESTBYTES_MAX + ", was given " + outlen
+      digestLength <= DIGESTBYTES_MAX,
+      "digestLength must be at most " +
+        DIGESTBYTES_MAX +
+        ", was given " +
+        digestLength
     );
     if (key) {
       assert(
@@ -303,8 +302,8 @@ export class Blake2b implements Reader, Writer {
     this.h = new Uint32Array(16);
     this.t = 0; // input count
     this.c = 0; // pointer within buffer
-    this.outlen = outlen; // output length in bytes
-    parameter_block[0] = outlen;
+    this.digestLength = digestLength; // output length in bytes
+    parameter_block[0] = digestLength;
     if (key) {
       parameter_block[1] = key.length;
     }
@@ -316,10 +315,12 @@ export class Blake2b implements Reader, Writer {
     if (personal) {
       parameter_block.set(personal, 48);
     }
-    for (let i: number = 0; i < 16; i++) { // initialize hash state
+    for (let i: number = 0; i < 16; i++) {
+      // initialize hash state
       this.h[i] = BLAKE2B_IV32[i] ^ B2B_GET32(parameter_block, i * 4);
     }
-    if (key) { // key the hash, if applicable
+    if (key) {
+      // key the hash, if applicable
       blake2bUpdate(this, key);
       this.c = 128; // at the end
     }
@@ -339,8 +340,8 @@ export class Blake2b implements Reader, Writer {
   }
   async read(out: Uint8Array): Promise<ReadResult> {
     assert(
-      out.length >= this.outlen,
-      "out length must be greater than or equal " + this.outlen
+      out.length >= this.digestLength,
+      "out length must be greater than or equal " + this.digestLength
     );
     blake2bDigest(this, out);
     return { eof: true, nread: out.length };

@@ -47,3 +47,9 @@ function toHex(n: number): string {
 export function toUint8Array(text: string): Uint8Array {
   return new TextEncoder().encode(text);
 }
+
+export function assert(cond: boolean, msg: string = "Assertion failed"): void {
+  if (!cond) {
+    throw Error(msg);
+  }
+}
