@@ -1,28 +1,25 @@
-// Module blake2b implements the BLAKE2b hash algorithm defined by RFC 7693
-// (https://tools.ietf.org/html/rfc7693).
-// For a detailed specification of BLAKE2b see https://blake2.net/blake2.pdf
-
 import { Reader, ReadResult, Writer } from "deno";
-import { assert } from "./util.ts";
+import { assert } from "https://deno.land/x/testing/mod.ts";
 
-export const DIGESTBYTES_MIN = 1;
-export const DIGESTBYTES_MAX = 64;
-export const INPUTBYTES_MIN = 0;
-export const INPUTBYTES_MAX = 2 ** 128 - 1;
-export const KEYBYTES_MIN = 0;
-export const KEYBYTES_MAX = 64;
-export const SALTBYTES = 16;
-export const PERSONALBYTES = 16;
-
-// Creates a new Blake2b instance computing the BLAKE2b checksum with a custom
-// length. Providing a key turns the hash into a MAC. The key must be between
-// zero and 64 bytes long. The hash size can be a value between 1 and 64 but it
-// is highly recommended to use values equal or greater than:
-// - 32 if BLAKE2b is used as a hash function (key is zero bytes long).
-// - 16 if BLAKE2b is used as a MAC function (key is at least 16 bytes long).
+/**
+ * @classdesc Class Blake2b implements BLAKE2b as specified in RFC 7693
+ *   (https://tools.ietf.org/html/rfc7693). It implements the deno.Reader and
+ *   deno.Writer interfaces to offer a straightforward and unambigious API for
+ *   updating and finalizing a hash.
+ */
 export class Blake2b implements Reader, Writer {
+  // Constant parameters
+  public static readonly DIGESTBYTES_MIN = 1;
+  public static readonly DIGESTBYTES_MAX = 64;
+  public static readonly INPUTBYTES_MIN = 0;
+  public static readonly INPUTBYTES_MAX = 2 ** 128 - 1;
+  public static readonly KEYBYTES_MIN = 0;
+  public static readonly KEYBYTES_MAX = 64;
+  public static readonly SALTBYTES = 16;
+  public static readonly PERSONALBYTES = 16;
+
   // Initialization Vector
-  static readonly IV32: Uint32Array = new Uint32Array([
+  protected static readonly IV32: Uint32Array = new Uint32Array([
     0xf3bcc908,
     0x6a09e667,
     0x84caa73b,
@@ -40,7 +37,8 @@ export class Blake2b implements Reader, Writer {
     0x137e2179,
     0x5be0cd19
   ]);
-  static readonly SIGMA8: number[] = [
+
+  protected static readonly SIGMA8: number[] = [
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
     14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3,
     11, 8, 12, 0, 5, 2, 15, 13, 10, 14, 3, 6, 7, 1, 9, 4,
@@ -54,89 +52,98 @@ export class Blake2b implements Reader, Writer {
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
     14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3
   ];
+
   // These are offsets into a uint64 buffer.
   // Multiply them all by 2 to make them offsets into a uint32 buffer,
   // because this is Javascript and we don't have uint64s
-  static readonly SIGMA82: Uint8Array = new Uint8Array(
+  protected static readonly SIGMA82: Uint8Array = new Uint8Array(
     Blake2b.SIGMA8.map(function(x: number): number {
       return x * 2;
     })
   );
 
-  public digestLength: number;
-  // reusable working vector
-  private v: Uint32Array = new Uint32Array(32);
-  // reusable message block vector
-  private m: Uint32Array = new Uint32Array(32);
-  private b: Uint8Array;
-  private h: Uint32Array;
-  private t: number;
-  private c: number;
+  public readonly digestBytes: number;
+  private v: Uint32Array = new Uint32Array(32); // reusable working vector
+  private m: Uint32Array = new Uint32Array(32); // reusable message block vector
+  private b: Uint8Array = new Uint8Array(128);
+  private h: Uint32Array = new Uint32Array(16);
+  private t: number = 0; // input count
+  private c: number = 0; // pointer within buffer
 
   // reusable parameterBlock
   private parameterBlock: Uint8Array = new Uint8Array([
-    0, 0, 0, 0,      //  0: digestLength, keylen, fanout, depth
-    0, 0, 0, 0,      //  4: leaf length, sequential mode
-    0, 0, 0, 0,      //  8: node offset
-    0, 0, 0, 0,      // 12: node offset
-    0, 0, 0, 0,      // 16: node depth, inner length, rfu
-    0, 0, 0, 0,      // 20: rfu
-    0, 0, 0, 0,      // 24: rfu
-    0, 0, 0, 0,      // 28: rfu
-    0, 0, 0, 0,      // 32: salt
-    0, 0, 0, 0,      // 36: salt
-    0, 0, 0, 0,      // 40: salt
-    0, 0, 0, 0,      // 44: salt
-    0, 0, 0, 0,      // 48: personal
-    0, 0, 0, 0,      // 52: personal
-    0, 0, 0, 0,      // 56: personal
-    0, 0, 0, 0       // 60: personal
+    0, 0, 0, 0, //  0: digestBytes, keylen, fanout, depth
+    0, 0, 0, 0, //  4: leaf length, sequential mode
+    0, 0, 0, 0, //  8: node offset
+    0, 0, 0, 0, // 12: node offset
+    0, 0, 0, 0, // 16: node depth, inner length, rfu
+    0, 0, 0, 0, // 20: rfu
+    0, 0, 0, 0, // 24: rfu
+    0, 0, 0, 0, // 28: rfu
+    0, 0, 0, 0, // 32: salt
+    0, 0, 0, 0, // 36: salt
+    0, 0, 0, 0, // 40: salt
+    0, 0, 0, 0, // 44: salt
+    0, 0, 0, 0, // 48: personal
+    0, 0, 0, 0, // 52: personal
+    0, 0, 0, 0, // 56: personal
+    0, 0, 0, 0  // 60: personal
   ]);
 
-  constructor(
-    digestLength: number,
+  /**
+   * Creates a new Blake2b instance computing the BLAKE2b checksum with a custom
+   * length. Providing a key turns the hash into a MAC. The key must be between
+   *  zero and 64 bytes long. The hash size can be a value between 1 and 64 but
+   * it is highly recommended to use values equal or greater than:
+   *   - 32 if BLAKE2b is used as a hash function (key is zero bytes long).
+   *   - 16 if BLAKE2b is used as a MAC function (key is at least 16 bytes long).
+   * @constructor
+   * @param {number} digestBytes - Digest length. Must be inbetween
+   *   Blake2b.DIGESTBYTES_MIN and Blake2b.DIGESTBYTES_MAX.
+   * @param {Uint8Array} [key] - Key length must be inbetween
+   *  Blake2b.KEYBYTES_MIN and Blake2b.KEYBYTES_MAX
+   * @param {Uint8Array} [salt] - Must be Blake2b.SALTBYTES long.
+   * @param {Uint8Array} [personal] - Must be Blake2b.PERSONALBYTES long.
+   */
+  public constructor(
+    digestBytes: number,
     key?: Uint8Array,
     salt?: Uint8Array,
     personal?: Uint8Array
   ) {
     assert(
-      digestLength >= DIGESTBYTES_MIN,
-      `actual digestLength ${digestLength}, valid min ${DIGESTBYTES_MIN}`
+      digestBytes >= Blake2b.DIGESTBYTES_MIN,
+      `actual digest length ${digestBytes}, min ${Blake2b.DIGESTBYTES_MIN}`
     );
     assert(
-      digestLength <= DIGESTBYTES_MAX,
-      `actual digest length ${digestLength}, valid max ${DIGESTBYTES_MAX}`
+      digestBytes <= Blake2b.DIGESTBYTES_MAX,
+      `actual digest length ${digestBytes}, max ${Blake2b.DIGESTBYTES_MAX}`
     );
     if (key) {
       assert(
-        key.length >= KEYBYTES_MIN,
-        `actual key length ${key.length}, valid min ${KEYBYTES_MIN}`
+        key.length >= Blake2b.KEYBYTES_MIN,
+        `actual key length ${key.length}, min ${Blake2b.KEYBYTES_MIN}`
       );
       assert(
-        key.length <= KEYBYTES_MAX,
-        `actual key length ${key.length}, valid min ${KEYBYTES_MAX}`
+        key.length <= Blake2b.KEYBYTES_MAX,
+        `actual key length ${key.length}, max ${Blake2b.KEYBYTES_MAX}`
       );
     }
     if (salt) {
       assert(
-        salt.length === SALTBYTES,
-        `actual salt length ${salt.length}, expected ${SALTBYTES}`
+        salt.length === Blake2b.SALTBYTES,
+        `actual salt length ${salt.length}, expected ${Blake2b.SALTBYTES}`
       );
     }
     if (personal) {
       assert(
-        personal.length === PERSONALBYTES,
+        personal.length === Blake2b.PERSONALBYTES,
         `actual personal length ${personal.length}, ` +
-          `expected ${PERSONALBYTES}`
+          `expected ${Blake2b.PERSONALBYTES}`
       );
     }
-    this.parameterBlock.fill(0); // zero out parameterBlock before usage
-    this.b = new Uint8Array(128);
-    this.h = new Uint32Array(16);
-    this.t = 0; // input count
-    this.c = 0; // pointer within buffer
-    this.digestLength = digestLength; // output length in bytes
-    this.parameterBlock[0] = digestLength;
+    this.digestBytes = digestBytes;
+    this.parameterBlock[0] = digestBytes;
     if (key) {
       this.parameterBlock[1] = key.length;
     }
@@ -150,8 +157,7 @@ export class Blake2b implements Reader, Writer {
     }
     for (let i: number = 0; i < 16; i++) {
       // initialize hash state
-      this.h[i] =
-        Blake2b.IV32[i] ^ Blake2b.B2B_GET32(this.parameterBlock, i * 4);
+      this.h[i] = Blake2b.IV32[i] ^ Blake2b.GET32(this.parameterBlock, i * 4);
     }
     if (key) {
       // key the hash, if applicable
@@ -163,12 +169,12 @@ export class Blake2b implements Reader, Writer {
   public async write(input: Uint8Array): Promise<number> {
     assert(input != null, "input must be Uint8Array");
     assert(
-      input.length >= INPUTBYTES_MIN,
-      "input length must be greater than or equal to " + INPUTBYTES_MIN
+      input.length >= Blake2b.INPUTBYTES_MIN,
+      `input length must be greater than or equal to ${Blake2b.INPUTBYTES_MIN}`
     );
     assert(
-      input.length <= INPUTBYTES_MAX,
-      "input length must be less than or equal to " + INPUTBYTES_MAX
+      input.length <= Blake2b.INPUTBYTES_MAX,
+      `input length must be less than or equal to ${Blake2b.INPUTBYTES_MAX}`
     );
     this.blake2bUpdate(input);
     return input.length;
@@ -176,21 +182,21 @@ export class Blake2b implements Reader, Writer {
 
   public async read(out: Uint8Array): Promise<ReadResult> {
     assert(
-      out.length >= this.digestLength,
-      "out length must be greater than or equal " + this.digestLength
+      out.length >= this.digestBytes,
+      `out length must be greater than or equal to ${this.digestBytes}`
     );
-    this.blake2bDigest(out);
+    this.blake2bFinal(out);
     return { eof: true, nread: out.length };
   }
 
   // Little-endian byte access
-  protected static B2B_GET32(arr: Uint8Array, i: number): number {
+  protected static GET32(arr: Uint8Array, i: number): number {
     return arr[i] ^ (arr[i + 1] << 8) ^ (arr[i + 2] << 16) ^ (arr[i + 3] << 24);
   }
 
   // 64-bit unsigned addition
   // Sets v[a,a+1] += v[b,b+1]
-  private ADD64AA(v: Uint32Array, a: number, b: number): void {
+  protected static ADD64AA(v: Uint32Array, a: number, b: number): void {
     let o0: number = v[a] + v[b];
     let o1: number = v[a + 1] + v[b + 1];
     if (o0 >= 0x100000000) {
@@ -203,7 +209,12 @@ export class Blake2b implements Reader, Writer {
   // 64-bit unsigned addition
   // Sets v[a,a+1] += b
   // b0 is the low 32 bits of b, b1 represents the high 32 bits
-  private ADD64AC(v: Uint32Array, a: number, b0: number, b1: number): void {
+  protected static ADD64AC(
+    v: Uint32Array,
+    a: number,
+    b0: number,
+    b1: number
+  ): void {
     let o0: number = v[a] + b0;
     if (b0 < 0) {
       o0 += 0x100000000;
@@ -218,7 +229,7 @@ export class Blake2b implements Reader, Writer {
 
   // G Mixing function
   // The ROTRs are inlined for speed
-  private B2B_G(
+  private GMIX(
     a: number,
     b: number,
     c: number,
@@ -230,27 +241,29 @@ export class Blake2b implements Reader, Writer {
     let x1: number = this.m[ix + 1];
     let y0: number = this.m[iy];
     let y1: number = this.m[iy + 1];
-    this.ADD64AA(this.v, a, b); // v[a,a+1] += v[b,b+1] ... in JS we must store a uint64 as two uint32s
-    this.ADD64AC(this.v, a, x0, x1); // v[a, a+1] += x ... x0 is the low 32 bits of x, x1 is the high 32 bits
+    // v[a,a+1] += v[b,b+1] ... in JS we must store a uint64 as two uint32s
+    Blake2b.ADD64AA(this.v, a, b);
+    // v[a, a+1] += x ... x0 is the low 32 bits of x, x1 is the high 32 bits
+    Blake2b.ADD64AC(this.v, a, x0, x1);
     // v[d,d+1] = (v[d,d+1] xor v[a,a+1]) rotated to the right by 32 bits
     let xor0: number = this.v[d] ^ this.v[a];
     let xor1: number = this.v[d + 1] ^ this.v[a + 1];
     this.v[d] = xor1;
     this.v[d + 1] = xor0;
-    this.ADD64AA(this.v, c, d);
+    Blake2b.ADD64AA(this.v, c, d);
     // v[b,b+1] = (v[b,b+1] xor v[c,c+1]) rotated right by 24 bits
     xor0 = this.v[b] ^ this.v[c];
     xor1 = this.v[b + 1] ^ this.v[c + 1];
     this.v[b] = (xor0 >>> 24) ^ (xor1 << 8);
     this.v[b + 1] = (xor1 >>> 24) ^ (xor0 << 8);
-    this.ADD64AA(this.v, a, b);
-    this.ADD64AC(this.v, a, y0, y1);
+    Blake2b.ADD64AA(this.v, a, b);
+    Blake2b.ADD64AC(this.v, a, y0, y1);
     // v[d,d+1] = (v[d,d+1] xor v[a,a+1]) rotated right by 16 bits
     xor0 = this.v[d] ^ this.v[a];
     xor1 = this.v[d + 1] ^ this.v[a + 1];
     this.v[d] = (xor0 >>> 16) ^ (xor1 << 16);
     this.v[d + 1] = (xor1 >>> 16) ^ (xor0 << 16);
-    this.ADD64AA(this.v, c, d);
+    Blake2b.ADD64AA(this.v, c, d);
     // v[b,b+1] = (v[b,b+1] xor v[c,c+1]) rotated right by 63 bits
     xor0 = this.v[b] ^ this.v[c];
     xor1 = this.v[b + 1] ^ this.v[c + 1];
@@ -278,11 +291,11 @@ export class Blake2b implements Reader, Writer {
     }
     // get little-endian words
     for (i = 0; i < 32; i++) {
-      this.m[i] = Blake2b.B2B_GET32(this.b, 4 * i);
+      this.m[i] = Blake2b.GET32(this.b, 4 * i);
     }
     // twelve rounds of mixing
     for (i = 0; i < 12; i++) {
-      this.B2B_G(
+      this.GMIX(
         0,
         8,
         16,
@@ -290,7 +303,7 @@ export class Blake2b implements Reader, Writer {
         Blake2b.SIGMA82[i * 16 + 0],
         Blake2b.SIGMA82[i * 16 + 1]
       );
-      this.B2B_G(
+      this.GMIX(
         2,
         10,
         18,
@@ -298,7 +311,7 @@ export class Blake2b implements Reader, Writer {
         Blake2b.SIGMA82[i * 16 + 2],
         Blake2b.SIGMA82[i * 16 + 3]
       );
-      this.B2B_G(
+      this.GMIX(
         4,
         12,
         20,
@@ -306,7 +319,7 @@ export class Blake2b implements Reader, Writer {
         Blake2b.SIGMA82[i * 16 + 4],
         Blake2b.SIGMA82[i * 16 + 5]
       );
-      this.B2B_G(
+      this.GMIX(
         6,
         14,
         22,
@@ -314,7 +327,7 @@ export class Blake2b implements Reader, Writer {
         Blake2b.SIGMA82[i * 16 + 6],
         Blake2b.SIGMA82[i * 16 + 7]
       );
-      this.B2B_G(
+      this.GMIX(
         0,
         10,
         20,
@@ -322,7 +335,7 @@ export class Blake2b implements Reader, Writer {
         Blake2b.SIGMA82[i * 16 + 8],
         Blake2b.SIGMA82[i * 16 + 9]
       );
-      this.B2B_G(
+      this.GMIX(
         2,
         12,
         22,
@@ -330,7 +343,7 @@ export class Blake2b implements Reader, Writer {
         Blake2b.SIGMA82[i * 16 + 10],
         Blake2b.SIGMA82[i * 16 + 11]
       );
-      this.B2B_G(
+      this.GMIX(
         4,
         14,
         16,
@@ -338,7 +351,7 @@ export class Blake2b implements Reader, Writer {
         Blake2b.SIGMA82[i * 16 + 12],
         Blake2b.SIGMA82[i * 16 + 13]
       );
-      this.B2B_G(
+      this.GMIX(
         6,
         8,
         18,
@@ -353,7 +366,6 @@ export class Blake2b implements Reader, Writer {
   }
 
   // Updates a BLAKE2b streaming hash
-  // Requires hash context and Uint8Array (byte array)
   private blake2bUpdate(input: Uint8Array): void {
     for (let i: number = 0; i < input.length; i++) {
       if (this.c === 128) {
@@ -367,14 +379,14 @@ export class Blake2b implements Reader, Writer {
   }
 
   // Completes a BLAKE2b streaming hash
-  private blake2bDigest(out: Uint8Array): void {
+  private blake2bFinal(out: Uint8Array): void {
     this.t += this.c; // mark last block offset
     while (this.c < 128) {
       // fill up with zeros
       this.b[this.c++] = 0;
     }
     this.blake2bCompress(true); // final block flag = 1
-    for (let i: number = 0; i < this.digestLength; i++) {
+    for (let i: number = 0; i < this.digestBytes; i++) {
       out[i] = this.h[i >> 2] >> (8 * (i & 3));
     }
   }

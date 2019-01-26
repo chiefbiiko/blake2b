@@ -3,15 +3,9 @@ import {
   test,
   assert,
   equal
-} from "https://raw.githubusercontent.com/denoland/deno_std/master/testing/mod.ts";
-import {
-  Blake2b,
-  DIGESTBYTES_MAX,
-  INPUTBYTES_MAX,
-  KEYBYTES_MAX,
-  SALTBYTES,
-  PERSONALBYTES
-} from "./mod.ts";
+} from "https://deno.land/x/testing/mod.ts";
+
+import { Blake2b } from "./mod.ts";
 import { toUint8Array, parseTestData, toHexString } from "./util.ts";
 
 const testVectors = JSON.parse(
@@ -29,7 +23,10 @@ test(function throwsOnInvalidDigestLength(): void {
 
 test(function throwsOnInvalidKeyLength(): void {
   try {
-    new Blake2b(DIGESTBYTES_MAX, new Uint8Array(KEYBYTES_MAX + 1));
+    new Blake2b(
+      Blake2b.DIGESTBYTES_MAX,
+      new Uint8Array(Blake2b.KEYBYTES_MAX + 1)
+    );
     assert(false);
   } catch (err) {
     assert(err);
@@ -39,9 +36,9 @@ test(function throwsOnInvalidKeyLength(): void {
 test(function throwsOnInvalidSaltLength(): void {
   try {
     new Blake2b(
-      DIGESTBYTES_MAX,
-      new Uint8Array(KEYBYTES_MAX),
-      new Uint8Array(SALTBYTES + 1)
+      Blake2b.DIGESTBYTES_MAX,
+      new Uint8Array(Blake2b.KEYBYTES_MAX),
+      new Uint8Array(Blake2b.SALTBYTES + 1)
     );
     assert(false);
   } catch (err) {
@@ -52,10 +49,10 @@ test(function throwsOnInvalidSaltLength(): void {
 test(function throwsOnInvalidPersonalLength(): void {
   try {
     new Blake2b(
-      DIGESTBYTES_MAX,
-      new Uint8Array(KEYBYTES_MAX),
-      new Uint8Array(SALTBYTES),
-      new Uint8Array(PERSONALBYTES + 1)
+      Blake2b.DIGESTBYTES_MAX,
+      new Uint8Array(Blake2b.KEYBYTES_MAX),
+      new Uint8Array(Blake2b.SALTBYTES),
+      new Uint8Array(Blake2b.PERSONALBYTES + 1)
     );
     assert(false);
   } catch (err) {
@@ -65,8 +62,8 @@ test(function throwsOnInvalidPersonalLength(): void {
 
 test(async function throwsOnInvalidInputLength(): Promise<void> {
   try {
-    const b: Blake2b = new Blake2b(DIGESTBYTES_MAX);
-    await b.write(new Uint8Array(INPUTBYTES_MAX + 1));
+    const b: Blake2b = new Blake2b(Blake2b.DIGESTBYTES_MAX);
+    await b.write(new Uint8Array(Blake2b.INPUTBYTES_MAX + 1));
     assert(false);
   } catch (err) {
     assert(err);
@@ -86,7 +83,7 @@ test(function passesTestVectors(): void {
 });
 
 test(async function passesRFCExamples(): Promise<void> {
-  const digestLength: number = DIGESTBYTES_MAX;
+  const digestLength: number = Blake2b.DIGESTBYTES_MAX;
   let b: Blake2b = new Blake2b(digestLength);
   const out: Uint8Array = new Uint8Array(digestLength);
   await b.write(toUint8Array("abc"));
