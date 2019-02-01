@@ -2,7 +2,8 @@ import { readFileSync } from "deno";
 import {
   test,
   assert,
-  equal
+  equal,
+  runTests
 } from "https://deno.land/x/testing/mod.ts";
 
 import { Blake2b } from "./mod.ts";
@@ -166,3 +167,5 @@ test(async function allowsMacinWithKeyAndShortDigest(): Promise<void> {
   await b.read(out);
   equal(toHexString(out), "fb43f0ab6872cbfd39ec4f8a1bc6fb37");
 });
+
+runTests();
