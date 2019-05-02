@@ -6,7 +6,7 @@
 
 BLAKE2b `ts` implementation for `deno`.
 
-> Once `deno` supports WASM this module will switch to a WebAssembly implementation for increased performance.
+> Will soon switch to a WebAssembly implementation.
 
 All credit to the original authors Jean-Philippe Aumasson, Samuel Neves, Zooko Wilcox-O'Hearn, and Christian Winnerlein, as well as open-source contributors [dcposch](https://github.com/dcposch/blakejs), [mafintosh](https://github.com/mafintosh/blake2b-wasm)
 and [emilbayes](https://github.com/emilbayes/blake2b) for porting the reference
