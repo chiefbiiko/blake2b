@@ -26,22 +26,22 @@ import { Blake2b }  from "https://deno.land/x/blake2b/mod.ts";
 
 ```ts
 import { Blake2b } from "https://deno.land/x/blake2b/mod.ts";
-import { toHexString } from "./util.ts";
+import { toHexString } from "https://deno.land/x/blake2b/util.ts";
 
 const encoder: TextEncoder = new TextEncoder();
 const msg: Uint8Array = encoder.encode("food");
 const key: Uint8Array = encoder.encode("sesameopendagatesaucepastacheese");
 
-async function main(): Promise<void> {
-  // hash example
-  let b: Blake2b = new Blake2b(Blake2b.DIGESTBYTES_MAX);
-  const hash: Uint8Array = new Uint8Array(b.digestBytes);
+async function main() {
+  console.log("hash example");
+  let b: Blake2b = new Blake2b(Blake2b.BYTES_MAX);
+  const hash: Uint8Array = new Uint8Array(b.bytes);
   await b.write(msg); // call write as often you like
   await b.read(hash);
   console.log(`BLAKE2b512 of msg ${msg}: ${toHexString(hash)}`);
-  // mac example
-  b = new Blake2b(Blake2b.DIGESTBYTES_MAX, key);
-  const mac: Uint8Array = new Uint8Array(b.digestBytes);
+  console.log("mac example");
+  b = new Blake2b(Blake2b.BYTES_MAX, key);
+  const mac: Uint8Array = new Uint8Array(b.bytes);
   await b.write(msg);
   await b.read(mac);
   console.log(`BLAKE2b512 of msg ${msg}, key ${key}: ${toHexString(mac)}`);
@@ -56,7 +56,7 @@ main();
 
 Class `Blake2b` implements `deno.Reader` and `deno.Writer`. To update the `Blake2b` instance call `Blake2b.prototype.write` as often you like, `Blake2b.prototype.read` once to digest and obtain the hash. 
 
-#### `new Blake2b(digestBytes: number, key?: Uint8Array, salt?: Uint8Array, personal?: Uint8Array)`
+#### `new Blake2b(bytes: number, key?: Uint8Array, salt?: Uint8Array, personal?: Uint8Array)`
 
 Create a `Blake2b` instance. If `key` is given the digest is essentially a MAC.
 
@@ -66,17 +66,17 @@ Update a `Blake2b` instance. Can be called multiple times.
 
 #### `Blake2b.prototype.read(out: Uint8Array): Promise<deno.ReadResult>`
 
-Obtain a hash digest. `out.length` must equal parameter `digestBytes` at instantiation.
+Obtain a hash digest. `out.length` must equal parameter `bytes` at instantiation.
 
-#### `<Blake2b>.digestBytes: number`
+#### `<Blake2b>.bytes: number`
 
 A readonly instance property indicating the digest length defined at instantiation.
 
 There are a couple handy static constants you should be aware of:
 
 ```ts
-Blake2b.DIGESTBYTES_MIN // 1
-Blake2b.DIGESTBYTES_MAX // 64
+Blake2b.BYTES_MIN // 1
+Blake2b.BYTES_MAX // 64
 Blake2b.INPUTBYTES_MIN  // 0
 Blake2b.INPUTBYTES_MAX  // 2 ** 128 - 1
 Blake2b.KEYBYTES_MIN    // 0

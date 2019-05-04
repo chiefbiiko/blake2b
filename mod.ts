@@ -8,8 +8,8 @@ import { assert } from "https://deno.land/x/testing/asserts.ts";
  */
 export class Blake2b implements Deno.Reader, Deno.Writer {
   // Constant parameters
-  public static readonly DIGESTBYTES_MIN = 1;
-  public static readonly DIGESTBYTES_MAX = 64;
+  public static readonly BYTES_MIN = 1;
+  public static readonly BYTES_MAX = 64;
   public static readonly INPUTBYTES_MIN = 0;
   public static readonly INPUTBYTES_MAX = 2 ** 128 - 1;
   public static readonly KEYBYTES_MIN = 0;
@@ -241,7 +241,7 @@ export class Blake2b implements Deno.Reader, Deno.Writer {
     })
   );
 
-  public readonly digestBytes: number;
+  public readonly bytes: number;
   private v: Uint32Array = new Uint32Array(32); // reusable working vector
   private m: Uint32Array = new Uint32Array(32); // reusable message block vector
   private b: Uint8Array = new Uint8Array(128);
@@ -254,7 +254,7 @@ export class Blake2b implements Deno.Reader, Deno.Writer {
     0,
     0,
     0,
-    0, //  0: digestBytes, keylen, fanout, depth
+    0, //  0: bytes, keylen, fanout, depth
     0,
     0,
     0,
@@ -325,26 +325,26 @@ export class Blake2b implements Deno.Reader, Deno.Writer {
    *   - 32 if BLAKE2b is used as a hash function (key is zero bytes long).
    *   - 16 if BLAKE2b is used as a MAC function (key is at least 16 bytes long).
    * @constructor
-   * @param {number} digestBytes - Digest length. Must be inbetween
-   *   Blake2b.DIGESTBYTES_MIN and Blake2b.DIGESTBYTES_MAX.
+   * @param {number} bytes - Digest length. Must be inbetween
+   *   Blake2b.BYTES_MIN and Blake2b.BYTES_MAX.
    * @param {Uint8Array} [key] - Key length must be inbetween
    *  Blake2b.KEYBYTES_MIN and Blake2b.KEYBYTES_MAX
    * @param {Uint8Array} [salt] - Must be Blake2b.SALTBYTES long.
    * @param {Uint8Array} [personal] - Must be Blake2b.PERSONALBYTES long.
    */
   public constructor(
-    digestBytes: number,
+    bytes: number,
     key?: Uint8Array,
     salt?: Uint8Array,
     personal?: Uint8Array
   ) {
     assert(
-      digestBytes >= Blake2b.DIGESTBYTES_MIN,
-      `actual digest length ${digestBytes}, min ${Blake2b.DIGESTBYTES_MIN}`
+      bytes >= Blake2b.BYTES_MIN,
+      `actual digest length ${bytes}, min ${Blake2b.BYTES_MIN}`
     );
     assert(
-      digestBytes <= Blake2b.DIGESTBYTES_MAX,
-      `actual digest length ${digestBytes}, max ${Blake2b.DIGESTBYTES_MAX}`
+      bytes <= Blake2b.BYTES_MAX,
+      `actual digest length ${bytes}, max ${Blake2b.BYTES_MAX}`
     );
     if (key) {
       assert(
@@ -369,8 +369,8 @@ export class Blake2b implements Deno.Reader, Deno.Writer {
           `expected ${Blake2b.PERSONALBYTES}`
       );
     }
-    this.digestBytes = digestBytes;
-    this.parameterBlock[0] = digestBytes;
+    this.bytes = bytes;
+    this.parameterBlock[0] = bytes;
     if (key) {
       this.parameterBlock[1] = key.length;
     }
@@ -409,8 +409,8 @@ export class Blake2b implements Deno.Reader, Deno.Writer {
 
   public async read(out: Uint8Array): Promise<Deno.ReadResult> {
     assert(
-      out.length >= this.digestBytes,
-      `out length must be greater than or equal to ${this.digestBytes}`
+      out.length >= this.bytes,
+      `out length must be greater than or equal to ${this.bytes}`
     );
     this.blake2bFinal(out);
     return { eof: true, nread: out.length };
@@ -613,7 +613,7 @@ export class Blake2b implements Deno.Reader, Deno.Writer {
       this.b[this.c++] = 0;
     }
     this.blake2bCompress(true); // final block flag = 1
-    for (let i: number = 0; i < this.digestBytes; i++) {
+    for (let i: number = 0; i < this.bytes; i++) {
       out[i] = this.h[i >> 2] >> (8 * (i & 3));
     }
   }

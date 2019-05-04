@@ -20,7 +20,7 @@ test(function throwsOnInvalidKeyLength() {
   assertThrows(
     () =>
       new Blake2b(
-        Blake2b.DIGESTBYTES_MAX,
+        Blake2b.BYTES_MAX,
         new Uint8Array(Blake2b.KEYBYTES_MAX + 1)
       )
   );
@@ -30,7 +30,7 @@ test(function throwsOnInvalidSaltLength() {
   assertThrows(
     () =>
       new Blake2b(
-        Blake2b.DIGESTBYTES_MAX,
+        Blake2b.BYTES_MAX,
         new Uint8Array(Blake2b.KEYBYTES_MAX),
         new Uint8Array(Blake2b.SALTBYTES + 1)
       )
@@ -41,7 +41,7 @@ test(function throwsOnInvalidPersonalLength() {
   assertThrows(
     () =>
       new Blake2b(
-        Blake2b.DIGESTBYTES_MAX,
+        Blake2b.BYTES_MAX,
         new Uint8Array(Blake2b.KEYBYTES_MAX),
         new Uint8Array(Blake2b.SALTBYTES),
         new Uint8Array(Blake2b.PERSONALBYTES + 1)
@@ -51,7 +51,7 @@ test(function throwsOnInvalidPersonalLength() {
 
 test(async function throwsOnInvalidInputLength() {
   assertThrowsAsync(async () => {
-    const b: Blake2b = new Blake2b(Blake2b.DIGESTBYTES_MAX);
+    const b: Blake2b = new Blake2b(Blake2b.BYTES_MAX);
     await b.write(new Uint8Array(Blake2b.INPUTBYTES_MAX + 1));
   });
 });
@@ -69,9 +69,9 @@ test(function passesTestVectors() {
 });
 
 test(async function passesRFCExamples() {
-  const digestLength: number = Blake2b.DIGESTBYTES_MAX;
-  let b: Blake2b = new Blake2b(digestLength);
-  const out: Uint8Array = new Uint8Array(digestLength);
+  const bytes: number = Blake2b.BYTES_MAX;
+  let b: Blake2b = new Blake2b(bytes);
+  const out: Uint8Array = new Uint8Array(bytes);
   await b.write(toUint8Array("abc"));
   await b.read(out);
   assertEquals(
@@ -79,7 +79,7 @@ test(async function passesRFCExamples() {
     "ba80a53f981c4d0d6a2797b69f12f6e94c212f14685ac4b74b12bb6fdbffa2d1" +
       "7d87c5392aab792dc252d5de4533cc9518d38aa8dbf1925ab92386edd4009923"
   );
-  b = new Blake2b(digestLength);
+  b = new Blake2b(bytes);
   out.fill(0);
   await b.write(toUint8Array(""));
   await b.read(out);
@@ -88,7 +88,7 @@ test(async function passesRFCExamples() {
     "786a02f742015903c6c6fd852552d272912f4740e15847618a86e217f71f5419" +
       "d25e1031afee585313896444934eb04b903a685b1448b755d56f701afe9be2ce"
   );
-  b = new Blake2b(digestLength);
+  b = new Blake2b(bytes);
   out.fill(0);
   await b.write(toUint8Array("The quick brown fox jumps over the lazy dog"));
   await b.read(out);
@@ -100,9 +100,9 @@ test(async function passesRFCExamples() {
 });
 
 test(async function allowsMultipleWrites() {
-  const digestLength: number = 32;
-  const b: Blake2b = new Blake2b(digestLength);
-  const out: Uint8Array = new Uint8Array(digestLength);
+  const bytes: number = 32;
+  const b: Blake2b = new Blake2b(bytes);
+  const out: Uint8Array = new Uint8Array(bytes);
   const buf: Uint8Array = toUint8Array("Hej, Verden");
   for (let i: number = 0; i < 10; i++) await b.write(buf);
   await b.read(out);
@@ -113,9 +113,9 @@ test(async function allowsMultipleWrites() {
 });
 
 test(async function allowsUnsafeShortDigest() {
-  const digestLength: number = 16;
-  const b: Blake2b = new Blake2b(digestLength);
-  const out: Uint8Array = new Uint8Array(digestLength);
+  const bytes: number = 16;
+  const b: Blake2b = new Blake2b(bytes);
+  const out: Uint8Array = new Uint8Array(bytes);
   const buf: Uint8Array = toUint8Array("Hej, Verden");
   for (let i: number = 0; i < 10; i++) await b.write(buf);
   await b.read(out);
@@ -125,9 +125,9 @@ test(async function allowsUnsafeShortDigest() {
 test(async function allowsMacinWithKey() {
   const key: Uint8Array = new Uint8Array(32).fill(108);
   for (let i = 1; i < key.length; i += 2) key[i] = 111;
-  const digestLength: number = 32;
-  const b: Blake2b = new Blake2b(digestLength, key);
-  const out: Uint8Array = new Uint8Array(digestLength);
+  const bytes: number = 32;
+  const b: Blake2b = new Blake2b(bytes, key);
+  const out: Uint8Array = new Uint8Array(bytes);
   const buf: Uint8Array = toUint8Array("Hej, Verden");
   for (let i: number = 0; i < 10; i++) await b.write(buf);
   await b.read(out);
@@ -140,9 +140,9 @@ test(async function allowsMacinWithKey() {
 test(async function allowsMacinWithKeyAndShortDigest() {
   const key: Uint8Array = new Uint8Array(32).fill(108);
   for (let i = 1; i < key.length; i += 2) key[i] = 111;
-  const digestLength: number = 16;
-  const b: Blake2b = new Blake2b(digestLength, key);
-  const out: Uint8Array = new Uint8Array(digestLength);
+  const bytes: number = 16;
+  const b: Blake2b = new Blake2b(bytes, key);
+  const out: Uint8Array = new Uint8Array(bytes);
   const buf: Uint8Array = toUint8Array("Hej, Verden");
   for (let i: number = 0; i < 10; i++) await b.write(buf);
   await b.read(out);
