@@ -52,7 +52,7 @@ test(function throwsOnInvalidPersonalLength() {
 test(async function throwsOnInvalidInputLength() {
   assertThrowsAsync(async () => {
     const b: Blake2b = new Blake2b(Blake2b.BYTES_MAX);
-    await b.write(new Uint8Array(Blake2b.INPUTBYTES_MAX + 1));
+    await b.write(new Uint8Array(Number(Blake2b.INPUTBYTES_MAX + 1n)));
   });
 });
 
