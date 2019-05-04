@@ -58,7 +58,7 @@ Class `Blake2b` implements `deno.Reader` and `deno.Writer`. To update the `Blake
 
 #### `new Blake2b(bytes: number, key?: Uint8Array, salt?: Uint8Array, personal?: Uint8Array)`
 
-Create a `Blake2b` instance. If `key` is given the digest is essentially a MAC.
+Create a `Blake2b` instance. `bytes` must indicate the desired digest length. If in doubt about your length requirements, just fall back to `Blake2b.BYTES_MAX`, which yields a 64-byte digest. If `key` is given the digest is essentially a MAC.
 
 #### `Blake2b.prototype.write(input: Uint8Array): Promise<number>`
 
@@ -66,7 +66,7 @@ Update a `Blake2b` instance. Can be called multiple times.
 
 #### `Blake2b.prototype.read(out: Uint8Array): Promise<deno.ReadResult>`
 
-Obtain a hash digest. `out.length` must equal parameter `bytes` at instantiation.
+Obtain a hash digest. `out.length` must not be less than parameter `bytes` at instantiation.
 
 #### `<Blake2b>.bytes: number`
 
@@ -78,7 +78,7 @@ There are a couple handy static constants you should be aware of:
 Blake2b.BYTES_MIN // 1
 Blake2b.BYTES_MAX // 64
 Blake2b.INPUTBYTES_MIN  // 0
-Blake2b.INPUTBYTES_MAX  // 2 ** 128 - 1
+Blake2b.INPUTBYTES_MAX  // 2n ** 128n - 1n
 Blake2b.KEYBYTES_MIN    // 0
 Blake2b.KEYBYTES_MAX    // 64
 Blake2b.SALTBYTES       // 16

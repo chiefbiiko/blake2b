@@ -11,7 +11,7 @@ export class Blake2b implements Deno.Reader, Deno.Writer {
   public static readonly BYTES_MIN = 1;
   public static readonly BYTES_MAX = 64;
   public static readonly INPUTBYTES_MIN = 0;
-  public static readonly INPUTBYTES_MAX = 2 ** 128 - 1;
+  public static readonly INPUTBYTES_MAX = 2n ** 128n - 1n;
   public static readonly KEYBYTES_MIN = 0;
   public static readonly KEYBYTES_MAX = 64;
   public static readonly SALTBYTES = 16;
