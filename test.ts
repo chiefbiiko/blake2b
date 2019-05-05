@@ -5,7 +5,7 @@ import {
   assertThrowsAsync
 } from "https://deno.land/x/testing/asserts.ts";
 
-import { Blake2b } from "./mod.ts";
+import { Blake2b } from "./index.ts";
 import { toUint8Array, parseTestData, toHexString } from "./util.ts";
 
 const testVectors = JSON.parse(
