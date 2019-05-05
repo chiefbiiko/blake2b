@@ -1,5 +1,5 @@
 import { Blake2b } from "https://deno.land/x/blake2b/mod.ts";
-import { toHexString } from "https://deno.land/x/blake2b/util.ts";
+import { toHexString } from "https://deno.land/x/blake2b/test_util.ts";
 
 const encoder: TextEncoder = new TextEncoder();
 const msg: Uint8Array = encoder.encode("food");

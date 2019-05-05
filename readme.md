@@ -4,11 +4,11 @@
 
 ---
 
-BLAKE2b `ts` implementation for `deno`.
+BLAKE2b implemented in WebAssembly.
 
-> Will soon switch to a WebAssembly implementation.
+> Tailored to `Deno`. Catch up if you ain't with da wave yet!
 
-All credit to the original authors Jean-Philippe Aumasson, Samuel Neves, Zooko Wilcox-O'Hearn, and Christian Winnerlein, as well as open-source contributors [dcposch](https://github.com/dcposch/blakejs), [mafintosh](https://github.com/mafintosh/blake2b-wasm)
+All credit to the original authors Jean-Philippe Aumasson, Samuel Neves, Zooko Wilcox-O'Hearn, and Christian Winnerlein, as well as open-source contributors [dcposch](https://github.com/dcposch/blakejs), [mafintosh](https://github.com/mafintosh/blake2b-wasm),
 and [emilbayes](https://github.com/emilbayes/blake2b) for porting the reference
 implementation to JavaScript and WebAssembly.
 
@@ -26,7 +26,7 @@ import { Blake2b }  from "https://deno.land/x/blake2b/mod.ts";
 
 ```ts
 import { Blake2b } from "https://deno.land/x/blake2b/mod.ts";
-import { toHexString } from "https://deno.land/x/blake2b/util.ts";
+import { toHexString } from "https://deno.land/x/blake2b/test_util.ts";
 
 const encoder: TextEncoder = new TextEncoder();
 const msg: Uint8Array = encoder.encode("food");
@@ -54,11 +54,11 @@ main();
 
 ## API
 
-Class `Blake2b` implements `deno.Reader` and `deno.Writer`. To update the `Blake2b` instance call `Blake2b.prototype.write` as often you like, `Blake2b.prototype.read` once to digest and obtain the hash. 
+Class `Blake2b` implements `Deno.Reader` and `Deno.Writer`. To update the `Blake2b` instance call `Blake2b.prototype.write` as often you like, `Blake2b.prototype.read` once to digest and obtain the hash. 
 
 #### `new Blake2b(bytes: number, key?: Uint8Array, salt?: Uint8Array, personal?: Uint8Array)`
 
-Create a `Blake2b` instance. `bytes` must indicate the desired digest length. If in doubt about your length requirements, just fall back to `Blake2b.BYTES_MAX`, which yields a 64-byte digest. If `key` is given the digest is essentially a MAC.
+Create a `Blake2b` instance. `bytes` must indicate the desired digest length. If in doubt about your digest length requirements, just fall back to `Blake2b.BYTES_MAX`, which yields a 64-byte digest. If `key` is given the digest is essentially a MAC. The `key` length can be any integer in `0..64`. Again, if in doubt about your `key` length requirements, settle for a paranoid `64` which is `Blake2b.KEYBYTES_MAX` and sleep tight. `salt` and `personal` must both have length `16` if set. They can be used for salting and defining unique hash functions for multiple applications respectively.
 
 #### `Blake2b.prototype.write(input: Uint8Array): Promise<number>`
 
@@ -70,11 +70,11 @@ Obtain a hash digest. `out.length` must not be less than parameter `bytes` at in
 
 #### `<Blake2b>.bytes: number`
 
-A readonly instance property indicating the digest length defined at instantiation.
+A `readonly` instance property indicating the digest length defined at instantiation.
 
 There are a couple handy static constants you should be aware of:
 
-```ts
+``` ts
 Blake2b.BYTES_MIN // 1
 Blake2b.BYTES_MAX // 64
 Blake2b.INPUTBYTES_MIN  // 0
@@ -83,6 +83,7 @@ Blake2b.KEYBYTES_MIN    // 0
 Blake2b.KEYBYTES_MAX    // 64
 Blake2b.SALTBYTES       // 16
 Blake2b.PERSONALBYTES   // 16
+Blake2b.WASM // WebAssembly module (not so handy)
 ```
 
 ---

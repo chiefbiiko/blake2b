@@ -1,3 +1,12 @@
+export interface TestVector {
+  expectedLength: number;
+  expected: Uint8Array;
+  input: Uint8Array;
+  key: Uint8Array;
+  salt: Uint8Array;
+  personal: Uint8Array;
+}
+
 function hexWrite(buf: Uint8Array, hexStr: string): Uint8Array {
   const strLen: number = hexStr.length;
   if (strLen % 2 !== 0) throw new TypeError("Invalid hex string");
@@ -9,11 +18,12 @@ function hexWrite(buf: Uint8Array, hexStr: string): Uint8Array {
   return buf;
 }
 
-export function parseTestData(vector: {
+export function parseTestVector(vector: {
   [key: string]: any;
 }): { [key: string]: Uint8Array } {
   return {
-    outlen: vector.outlen,
+    expectedLength: vector.outlen,
+    expected: hexWrite(new Uint8Array(vector.out.length / 2), vector.out),
     input: hexWrite(new Uint8Array(vector.input.length / 2), vector.input),
     key:
       vector.key.length === 0
@@ -26,15 +36,8 @@ export function parseTestData(vector: {
     personal:
       vector.personal.length === 0
         ? null
-        : hexWrite(new Uint8Array(vector.personal.length / 2), vector.personal),
-    expected: hexWrite(new Uint8Array(vector.out.length / 2), vector.out)
+        : hexWrite(new Uint8Array(vector.personal.length / 2), vector.personal)
   };
-}
-
-export function toHexString(buf: Uint8Array): string {
-  let str = "";
-  for (let i: number = 0; i < buf.length; i++) str += toHex(buf[i]);
-  return str;
 }
 
 function toHex(n: number): string {
@@ -42,6 +45,14 @@ function toHex(n: number): string {
     return "0" + n.toString(16);
   }
   return n.toString(16);
+}
+
+export function toHexString(buf: Uint8Array): string {
+  let str = "";
+  for (let i: number = 0; i < buf.length; i++) {
+    str += toHex(buf[i]);
+  }
+  return str;
 }
 
 export function toUint8Array(text: string): Uint8Array {
