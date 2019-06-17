@@ -6,7 +6,7 @@
 
 BLAKE2b implemented in WebAssembly.
 
-> Tailored to `Deno`. Catch up if you ain't with da wave yet!
+> Currently refactoring to an update/digest API. README + tests are outdated. `./mod.ts` is the truth.
 
 All credit to the original authors Jean-Philippe Aumasson, Samuel Neves, Zooko Wilcox-O'Hearn, and Christian Winnerlein, as well as open-source contributors [dcposch](https://github.com/dcposch/blakejs), [mafintosh](https://github.com/mafintosh/blake2b-wasm),
 and [emilbayes](https://github.com/emilbayes/blake2b) for porting the reference
