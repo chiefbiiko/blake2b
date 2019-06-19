@@ -39,22 +39,3 @@ export function parseTestVector(vector: {
         : hexWrite(new Uint8Array(vector.personal.length / 2), vector.personal)
   };
 }
-
-function toHex(n: number): string {
-  if (n < 16) {
-    return "0" + n.toString(16);
-  }
-  return n.toString(16);
-}
-
-export function toHexString(buf: Uint8Array): string {
-  let str = "";
-  for (let i: number = 0; i < buf.length; i++) {
-    str += toHex(buf[i]);
-  }
-  return str;
-}
-
-export function toUint8Array(text: string): Uint8Array {
-  return new TextEncoder().encode(text);
-}
