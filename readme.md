@@ -1,16 +1,12 @@
 # blake2b
 
-[![Travis](http://img.shields.io/travis/chiefbiiko/blake2b.svg?style=flat)](http://travis-ci.org/chiefbiiko/blake2b) [![AppVeyor](https://ci.appveyor.com/api/projects/status/github/chiefbiiko/blake2b?branch=master&svg=true)](https://ci.appveyor.com/project/chiefbiiko/blake2b)
-
----
+![ci](https://github.com/chiefbiiko/blake2b/workflows/ci/badge.svg)
 
 BLAKE2b implemented in WebAssembly.
 
 All credit to the original authors Jean-Philippe Aumasson, Samuel Neves, Zooko Wilcox-O'Hearn, and Christian Winnerlein, as well as open-source contributors [dcposch](https://github.com/dcposch/blakejs), [mafintosh](https://github.com/mafintosh/blake2b-wasm),
 and [emilbayes](https://github.com/emilbayes/blake2b) for porting the reference
 implementation to JavaScript and WebAssembly.
-
----
 
 ## Usage
 
@@ -19,8 +15,6 @@ import { blake2b } from "https://deno.land/x/blake2b/mod.ts";
 
 console.log('BLAKE2b512 of msg "food":', blake2b("food", "utf8", "hex"));
 ```
-
----
 
 ## API
 
@@ -53,15 +47,11 @@ SALTBYTES       // 16
 PERSONALBYTES   // 16
 ```
 
----
-
 ## Readables
 
 [Saarinen, M-J; Aumasson, J-P (November 2015). The BLAKE2 Cryptographic Hash and Message Authentication Code (MAC). IETF. doi:10.17487/RFC7693. RFC 7693.](https://tools.ietf.org/html/rfc7693)
 
 [Aumasson, Neves, Wilcox-O’Hearn, and Winnerlein (January 2013). "BLAKE2: simpler, smaller, fast as MD5".](https://blake2.net/blake2.pdf)
-
----
 
 ## License
 
