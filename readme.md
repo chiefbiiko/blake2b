@@ -18,6 +18,31 @@ console.log('BLAKE2b512 of msg "food":', blake2b("food", "utf8", "hex"));
 
 ## API
 
+#### single-part hashing
+
+with one function call:
+
+``` ts
+export function blake2b(
+  msg: string | Uint8Array,
+  inputEncoding?: string,
+  outputEncoding?: string,
+  bytes: number = BYTES_MAX,
+  key?: string | Uint8Array,
+  salt?: string | Uint8Array,
+  personal?: string | Uint8Array
+): string | Uint8Arrays
+```
+
+If any multiple of `msg`, `key`, `salt` or `personal` are passed as strings they must have the same encoding.
+
+**Example**
+
+``` ts
+const msg: Uint8Array = Uint8Array.from([ 65, 67, 65, 66 ]);
+const digest: Uint8Array = blake2b(msg);
+```
+
 #### `new Blake2b(bytes: number, key?: Uint8Array, salt?: Uint8Array, personal?: Uint8Array)`
 
 Create a `Blake2b` instance. `bytes` must indicate the desired digest length. If in doubt about your digest length requirements, just fall back to `Blake2b.BYTES_MAX`, which yields a 64-byte digest. If `key` is given the digest is essentially a MAC. The `key` length can be any integer in `0..64`. Again, if in doubt about your `key` length requirements, settle for a paranoid `64` which is `Blake2b.KEYBYTES_MAX` and sleep tight. `salt` and `personal` must both have length `16` if set. They can be used for salting and defining unique hash functions for multiple applications respectively.
