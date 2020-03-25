@@ -2,9 +2,9 @@ export interface TestVector {
   expectedLength: number;
   expected: Uint8Array;
   input: Uint8Array;
-  key: Uint8Array;
-  salt: Uint8Array;
-  personal: Uint8Array;
+  key?: Uint8Array;
+  salt?: Uint8Array;
+  personal?: Uint8Array;
 }
 
 function hexWrite(buf: Uint8Array, hexStr: string): Uint8Array {
@@ -20,22 +20,22 @@ function hexWrite(buf: Uint8Array, hexStr: string): Uint8Array {
 
 export function parseTestVector(vector: {
   [key: string]: any;
-}): { [key: string]: Uint8Array } {
+}): TestVector {
   return {
     expectedLength: vector.outlen,
     expected: hexWrite(new Uint8Array(vector.out.length / 2), vector.out),
     input: hexWrite(new Uint8Array(vector.input.length / 2), vector.input),
     key:
       vector.key.length === 0
-        ? null
+        ? undefined
         : hexWrite(new Uint8Array(vector.key.length / 2), vector.key),
     salt:
       vector.salt.length === 0
-        ? null
+        ? undefined
         : hexWrite(new Uint8Array(vector.salt.length / 2), vector.salt),
     personal:
       vector.personal.length === 0
-        ? null
+        ? undefined
         : hexWrite(new Uint8Array(vector.personal.length / 2), vector.personal)
   };
 }

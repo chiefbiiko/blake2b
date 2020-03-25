@@ -1,9 +1,15 @@
-import { assert } from "https://deno.land/std/testing/asserts.ts";
 import {
   encode,
   decode
-} from "https://denopkg.com/chiefbiiko/std-encoding/mod.ts";
+} from "./deps.ts";
+
 import { Wasm, loadWasm } from "./loadWasm.ts";
+
+function assert(sth: any): void {
+  if (!sth) {
+    throw new Error("sth is falsy")
+  }
+}
 
 export const BYTES_MIN: number = 1;
 export const BYTES_MAX: number = 64;
@@ -87,7 +93,7 @@ export class Blake2b {
 
     this.bytes = bytes;
     this.finalized = false;
-    this.pointer = Blake2b.freeList.pop();
+    this.pointer = Blake2b.freeList.pop() ?? 0;
 
     Blake2b.wasm.memory.fill(0, 0, 64);
     Blake2b.wasm.memory[0] = this.bytes;

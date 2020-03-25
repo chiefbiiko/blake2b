@@ -1,8 +1,8 @@
-import { test, runIfMain } from "https://deno.land/std/testing/mod.ts";
 import {
   assertEquals,
   assertThrows
-} from "https://deno.land/std/testing/asserts.ts";
+} from "https://deno.land/std@v0.36.0/testing/asserts.ts";
+
 import {
   BYTES_MAX,
   KEYBYTES_MAX,
@@ -11,6 +11,7 @@ import {
   Blake2b,
   blake2b
 } from "./mod.ts";
+
 import { TestVector, parseTestVector } from "./test_util.ts";
 
 const testVectors: TestVector[] = JSON.parse(
@@ -22,13 +23,13 @@ testVectors.forEach(
     { expectedLength, expected, input, key, salt, personal }: TestVector,
     i: number
   ): void => {
-    test({
+    Deno.test({
       name: `vector ${i}`,
       fn(): void {
         const hash: any = blake2b(
           input,
-          null,
-          null,
+          undefined,
+          undefined,
           expectedLength,
           key,
           salt,
@@ -40,14 +41,14 @@ testVectors.forEach(
   }
 );
 
-test({
+Deno.test({
   name: "throws on invalid digest length",
   fn(): void {
     assertThrows(() => new Blake2b(0));
   }
 });
 
-test({
+Deno.test({
   name: "throws on invalid key length",
   fn(): void {
     assertThrows(
@@ -56,7 +57,7 @@ test({
   }
 });
 
-test({
+Deno.test({
   name: "throws on invalid salt length",
   fn(): void {
     assertThrows(
@@ -70,7 +71,7 @@ test({
   }
 });
 
-test({
+Deno.test({
   name: "throws on invalid personal length",
   fn(): void {
     assertThrows(
@@ -85,7 +86,7 @@ test({
   }
 });
 
-test({
+Deno.test({
   name: "passes RFC examples",
   async fn(): Promise<void> {
     let hash: any = blake2b("abc", "utf8", "hex", BYTES_MAX);
@@ -117,7 +118,7 @@ test({
   }
 });
 
-test({
+Deno.test({
   name: "allows multiple updates",
   async fn(): Promise<void> {
     const b: Blake2b = new Blake2b(32);
@@ -135,7 +136,7 @@ test({
   }
 });
 
-test({
+Deno.test({
   name: "allows unsafe short digest",
   async fn(): Promise<void> {
     const b: Blake2b = new Blake2b(16);
@@ -150,7 +151,7 @@ test({
   }
 });
 
-test({
+Deno.test({
   name: "allows macin with key",
   async fn(): Promise<void> {
     const key: Uint8Array = new Uint8Array(32).fill(108);
@@ -174,7 +175,7 @@ test({
   }
 });
 
-test({
+Deno.test({
   name: "allows macin with key and short digest",
   async fn(): Promise<void> {
     const key: Uint8Array = new Uint8Array(32).fill(108);
@@ -194,5 +195,3 @@ test({
     assertEquals(hash, "fb43f0ab6872cbfd39ec4f8a1bc6fb37");
   }
 });
-
-runIfMain(import.meta, { parallel: true });
